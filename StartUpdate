@@ -1,0 +1,33 @@
+#!/bin/bash
+
+
+# Run system updates
+apt update && apt upgrade -y && apt autoremove -y
+
+echo "System update complete."
+
+# Get current date and time adjusted to system's timezone
+date_time="$(date '+%a %b %d %I:%M %p %Z %Y')"
+
+# Get the user IP address (first non-loopback IP)
+user_ip=$(hostname -I | awk '{print $1}')
+
+# Get the hostname
+host_name=$(hostname)
+
+# Get the gateway IP
+gateway_ip=$(ip route | grep default | awk '{print $3}')
+
+# Get services listening on ports (service:port, resolving service names, filtering active)
+listening_services=$(ss -tulnp | awk 'NR>1 {split($5, a, ":"); split($7, b, ","); if (b[2] ~ /pid=/) {split(b[2],c,"="); pid=c[2]; if (system("ps -p " pid " >/dev/null 2>&1") == 0) {cmd="ps -p " pid " -o comm="; cmd | getline service; close(cmd); print service ":" a[2];}} else {print b[2] ":" a[2];}}')
+
+# Update /etc/motd
+echo "Welcome to $host_name" > /etc/motd
+echo "Date and Time: $date_time" >> /etc/motd
+echo "User IP: $user_ip" >> /etc/motd
+echo "Gateway IP: $gateway_ip" >> /etc/motd
+echo "" >> /etc/motd
+echo "Services Listening on Ports:" >> /etc/motd
+echo "$listening_services" >> /etc/motd
+
+echo "Updated /etc/motd with system information."
